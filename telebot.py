@@ -1,4 +1,4 @@
-import os
+port os
 import sqlite3
 import asyncio
 import logging
@@ -6,110 +6,7 @@ import traceback
 from telethon import TelegramClient, events, Button, errors
 
 # ------------------------------------------------------------------
-# CONFIGURATION
-# ------------------------------------------------------------------
-BOT_TOKEN = "8067704851:AAFrs467ZDkuY1Lf_03PuGhsueAQiafRzQs"
-OWNER_ID = 7914656574
-API_ID = 26420070
-API_HASH = 'cb6590491238a5db00d997b28544906d'
-SESSIONS_DIR = "MyTelethon"
-DB_PATH = 'bot_database.db'
-
-os.makedirs(SESSIONS_DIR, exist_ok=True)
-
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[logging.FileHandler("bot.log"), logging.StreamHandler()]
-)
-logger = logging.getLogger(__name__)
-
-# ------------------------------------------------------------------
-# DATABASE & INITIALIZATION
-# ------------------------------------------------------------------
-def get_db_connection():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
-
-def init_db():
-    """Ensures all tables exist before the bot starts."""
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute('''CREATE TABLE IF NOT EXISTS users 
-                      (user_id INTEGER PRIMARY KEY, balance REAL DEFAULT 0.0, is_owner INTEGER DEFAULT 0)''')
-    cursor.execute('''CREATE TABLE IF NOT EXISTS accounts 
-                      (id INTEGER PRIMARY KEY AUTOINCREMENT, phone TEXT UNIQUE, price REAL, status TEXT DEFAULT 'available')''')
-    cursor.execute('''CREATE TABLE IF NOT EXISTS settings 
-                      (key TEXT PRIMARY KEY, value TEXT)''')
-    # Set default price if not exists
-    cursor.execute("INSERT OR IGNORE INTO settings (key, value) VALUES ('default_price', '100.0')")
-    conn.commit()
-    conn.close()
-
-def init_user(user_id):
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("INSERT OR IGNORE INTO users (user_id, balance, is_owner) VALUES (?, 0.0, ?)", 
-                       (user_id, 1 if user_id == OWNER_ID else 0))
-        conn.commit()
-        conn.close()
-    except Exception as e:
-        logger.error(f"DB Error (init_user): {e}")
-
-def get_user_balance(user_id):
-    conn = get_db_connection()
-    row = conn.execute("SELECT balance FROM users WHERE user_id = ?", (user_id,)).fetchone()
-    conn.close()
-    return row['balance'] if row else 0.0
-
-def update_user_balance(user_id, amount):
-    try:
-        conn = get_db_connection()
-        conn.execute("UPDATE users SET balance = balance + ? WHERE user_id = ?", (amount, user_id))
-        conn.commit()
-        conn.close()
-        return True
-    except Exception as e:
-        logger.error(f"DB Error (update_balance): {e}")
-        return False
-
-def get_stats():
-    conn = get_db_connection()
-    u_count = conn.execute("SELECT COUNT(*) FROM users").fetchone()[0]
-    a_count = conn.execute("SELECT COUNT(*) FROM accounts WHERE status = 'available'").fetchone()[0]
-    conn.close()
-    return u_count, a_count
-
-def get_default_price():
-    conn = get_db_connection()
-    row = conn.execute("SELECT value FROM settings WHERE key = 'default_price'").fetchone()
-    conn.close()
-    return float(row['value']) if row else 100.0
-
-def set_default_price(price):
-    conn = get_db_connection()
-    conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('default_price', ?)", (str(price),))
-    conn.commit()
-    conn.close()
-    return True
-
-# ------------------------------------------------------------------
-# BOT & STATE SETUP
-# ------------------------------------------------------------------
-bot = TelegramClient("bot_session", API_ID, API_HASH).start(bot_token=BOT_TOKEN)
-user_states = {} 
-active_otp_clients = {}
-
-# ------------------------------------------------------------------
-# KEYBOARDS (UI IMPROVEMENTS)
-# ------------------------------------------------------------------
-def get_owner_keyboard():
-    return [
-        [Button.text("➕ Add Account", resize=True), Button.text("📢 Announcement")],
-        [Button.text("💰 Add Money"), Button.text("📊 Stats")],
-        [Button.text("🔍 Check Fund"), Button.text("🗑️ Delete Fund")],
+#         [Button.text("🔍 Check Fund"), Button.text("🗑️ Delete Fund")],
         [Button.text("🏷️ Change Price")]
     ]
 
